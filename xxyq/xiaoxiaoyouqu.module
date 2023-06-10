@@ -9,4 +9,4 @@
 hostname= %APPEND% prod.ukids.cn,fastapi.ukids.cn
 
 [Script]
-小小优趣=type=http-response,pattern=^https?:\/\/(prod|fastapi)\.ukids\.cn\/ucapp\/getUser,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/lutqhysky/quantumultx/mylove/xiaoxiaoyouqu/Script/xxyq.js
+小小优趣=type=http-response,pattern=^https?:\/\/(prod|fastapi)\.ukids\.cn\/ucapp\/getUser,requires-body=1,max-size=0,script-path=https://raw.githubusercontent.com/CraKeyBoy/Script/main/xxyq/xxyq.js
