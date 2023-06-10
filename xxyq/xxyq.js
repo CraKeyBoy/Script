@@ -2,7 +2,8 @@ var body = $response.body;
 var url = $request.url; 
 var obj = JSON.parse(body); 
 const vip = '/ucapp/getUser';
-if (url.indexOf(vip) != -1) {
+const vip1 = '/uch5/getUser';
+if (url.indexOf(vip) != -1 || url.indexOf(vip2) != -1) {
     obj.data.vip = 1;
     obj.data.vipReal = 1;
     obj.data.svip = 1;
