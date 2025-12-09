@@ -318,7 +318,7 @@ async function syncToQinglong(cookie, ptPin) {
     // 检查配置
     const configCheck = checkConfig(config);
     if (!configCheck.valid) {
-        $.msg('JD Cookie Sync', '配置错误', JSON.stringify($argument));
+        $.msg('JD Cookie Sync', '配置错误', configCheck.message);
         return;
     }
 
