@@ -8,149 +8,66 @@ const $ = new Env('JD Cookie Sync');
 // ============= 配置管理 =============
 
 /**
- * 从持久化存储或模块参数读取配置
+ * 从模块参数或持久化存储读取配置
  */
 function getConfig() {
-    let config = {};
-    let argumentStr = null;
+    const config = {};
 
-    // 多种方式尝试获取参数字符串
-    // 方式1: 全局 $argument 变量（Surge/Loon）
     if (typeof $argument !== 'undefined' && $argument) {
-        argumentStr = $argument;
+        const argumentStr = JSON.parse($argument);
         $.log(`🔍 从 $argument 获取参数`);
-    }
-    // 方式2: $request.argument（Shadowrocket）
-    else if (typeof $request !== 'undefined' && $request && $request.argument) {
-        argumentStr = $request.argument;
-        $.log(`🔍 从 $request.argument 获取参数`);
-    }
-    // 方式3: 尝试从 URL 查询参数中提取（备选方案）
-    else if (typeof $request !== 'undefined' && $request && $request.url) {
-        const urlMatch = $request.url.match(/[?&]argument=([^&]*)/);
-        if (urlMatch && urlMatch[1]) {
-            argumentStr = decodeURIComponent(urlMatch[1]);
-            $.log(`🔍 从 URL 查询参数获取 argument`);
-        }
-    }
-
-    // 解析参数字符串
-    if (argumentStr) {
-        const trimmedArgument = argumentStr.trim();
-        $.log(`🔍 原始模块参数: ${trimmedArgument}`);
-
-        let parsedFromJson = false;
-
-        // 优先尝试 JSON 格式（Shadowrocket 新格式）
-        if (trimmedArgument.startsWith('{') && trimmedArgument.endsWith('}')) {
-            try {
-                const parsed = JSON.parse(trimmedArgument);
-                if (parsed && typeof parsed === 'object') {
-                    parsedFromJson = true;
-                    $.log(`🔍 解析 JSON 参数成功，键数量: ${Object.keys(parsed).length}`);
-
-                    if (parsed.ql_url) {
-                        config.qlUrl = String(parsed.ql_url).trim();
-                        $.log(`🔍 ql_url -> ${config.qlUrl}`);
-                    }
-                    if (parsed.ql_client_id) {
-                        config.clientId = String(parsed.ql_client_id).trim();
-                        $.log(`🔍 ql_client_id -> ${config.clientId.substring(0, 10)}${config.clientId.length > 10 ? '...' : ''}`);
-                    }
-                    if (parsed.ql_client_secret) {
-                        config.clientSecret = String(parsed.ql_client_secret).trim();
-                        $.log(`🔍 ql_client_secret -> 已获取`);
-                    }
-                    if (parsed.ql_update_interval !== undefined && parsed.ql_update_interval !== null) {
-                        config.updateInterval = parseInt(parsed.ql_update_interval, 10) || 1800;
-                        $.log(`🔍 ql_update_interval -> ${config.updateInterval}`);
-                    }
+        try {
+            const parsed = JSON.parse(argumentStr);
+            if (parsed && typeof parsed === 'object') {
+                parsedFromJson = true;
+                if (parsed.ql_url) {
+                    config.qlUrl = String(parsed.ql_url).trim();
+                    $.log(`🔍 ql_url -> ${config.qlUrl}`);
                 }
-            } catch (error) {
-                $.log(`⚠️ JSON 参数解析失败: ${error.message}`);
+                if (parsed.ql_client_id) {
+                    config.clientId = String(parsed.ql_client_id).trim();
+                    $.log(`🔍 ql_client_id -> ${config.clientId.substring(0, 10)}${config.clientId.length > 10 ? '...' : ''}`);
+                }
+                if (parsed.ql_client_secret) {
+                    config.clientSecret = String(parsed.ql_client_secret).trim();
+                    $.log(`🔍 ql_client_secret -> 已获取`);
+                }
+                if (parsed.ql_update_interval !== undefined && parsed.ql_update_interval !== null) {
+                    config.updateInterval = parseInt(parsed.ql_update_interval, 10) || 1800;
+                    $.log(`🔍 ql_update_interval -> ${config.updateInterval}`);
+                }
             }
+        } catch (error) {
+            $.log(`⚠️ JSON 参数解析失败: ${error.message}`);
         }
+    } 
 
-        // 兼容旧版 key=value 格式
-        if (!parsedFromJson) {
-            try {
-                const separator = trimmedArgument.includes('&') ? '&' : ',';
-                const args = trimmedArgument.split(separator);
-                $.log(`🔍 使用分隔符 "${separator}" 解析参数，共 ${args.length} 项`);
-
-                for (const arg of args) {
-                    const equalIndex = arg.indexOf('=');
-                    if (equalIndex === -1) continue;
-
-                    const key = arg.substring(0, equalIndex).trim();
-                    let value = arg.substring(equalIndex + 1).trim();
-
-                    // 处理 URL 编码的值
-                    try {
-                        value = decodeURIComponent(value);
-                    } catch (e) {
-                        // ignore decoding error
-                    }
-
-                    $.log(`🔍 解析参数: key="${key}", value="${value.substring(0, 50)}${value.length > 50 ? '...' : ''}"`);
-
-                    if (!key) continue;
-
-                    if (key === 'ql_update_interval') {
-                        config.updateInterval = parseInt(value, 10) || 1800;
-                    } else if (key === 'ql_url') {
-                        config.qlUrl = value;
-                    } else if (key === 'ql_client_id') {
-                        config.clientId = value;
-                    } else if (key === 'ql_client_secret') {
-                        config.clientSecret = value;
-                    }
-                }
-
-                if (config.qlUrl || config.clientId || config.clientSecret) {
-                    $.log(`✅ 从模块参数读取配置: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}`);
-                } else {
-                    $.log(`⚠️ 模块参数解析完成，但未获取到有效配置`);
-                }
-            } catch (error) {
-                $.log(`⚠️ 解析模块参数失败: ${error.message}`);
-            }
-        }
+    // 持久化存储作为兜底，同时回写最新值
+    if (config.qlUrl) {
+        $.setval(config.qlUrl, 'ql_url');
     } else {
-        $.log(`⚠️ 未能获取模块参数，将从持久化存储读取配置`);
+        config.qlUrl = $.getval('ql_url');
     }
 
-    // 从持久化存储读取缺失的配置
-    if (!config.qlUrl) {
-        const storedUrl = $.getval('ql_url');
-        if (storedUrl) {
-            config.qlUrl = storedUrl;
-            $.log(`📦 从持久化存储读取 ql_url`);
-        }
-    }
-    if (!config.clientId) {
-        const storedId = $.getval('ql_client_id');
-        if (storedId) {
-            config.clientId = storedId;
-            $.log(`📦 从持久化存储读取 ql_client_id`);
-        }
-    }
-    if (!config.clientSecret) {
-        const storedSecret = $.getval('ql_client_secret');
-        if (storedSecret) {
-            config.clientSecret = storedSecret;
-            $.log(`📦 从持久化存储读取 ql_client_secret`);
-        }
-    }
-    if (!config.updateInterval) {
-        const storedInterval = $.getval('ql_update_interval');
-        config.updateInterval = parseInt(storedInterval || '1800'); // 默认30分钟
-        if (storedInterval) {
-            $.log(`📦 从持久化存储读取 ql_update_interval: ${config.updateInterval}`);
-        }
+    if (config.clientId) {
+        $.setval(config.clientId, 'ql_client_id');
+    } else {
+        config.clientId = $.getval('ql_client_id');
     }
 
-    message: `📋 最终配置状态: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}s`;
+    if (config.clientSecret) {
+        $.setval(config.clientSecret, 'ql_client_secret');
+    } else {
+        config.clientSecret = $.getval('ql_client_secret');
+    }
+
+    if (config.updateInterval) {
+        config.updateInterval = parseInt(config.updateInterval, 10) || 1800;
+        $.setval(String(config.updateInterval), 'ql_update_interval');
+    } else {
+        config.updateInterval = parseInt($.getval('ql_update_interval') || '1800', 10);
+    }
+
     $.log(`📋 最终配置状态: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}s`);
     return config;
 }
@@ -159,43 +76,26 @@ function getConfig() {
  * 检查配置是否完整
  */
 function checkConfig(config) {
-    // 详细的配置检查日志
-    $.log(`🔍 开始检查配置完整性...`);
-    $.log(`   - qlUrl: ${config.qlUrl ? '✓ ' + config.qlUrl : '✗ 未设置'}`);
-    $.log(`   - clientId: ${config.clientId ? '✓ ' + config.clientId.substring(0, 10) + '...' : '✗ 未设置'}`);
-    $.log(`   - clientSecret: ${config.clientSecret ? '✓ ' + config.clientSecret.substring(0, 10) + '...' : '✗ 未设置'}`);
-    $.log(`   - updateInterval: ${config.updateInterval}s`);
-    
     if (!config.qlUrl || !config.clientId || !config.clientSecret) {
-        const missingItems = [];
-        if (!config.qlUrl) missingItems.push('ql_url');
-        if (!config.clientId) missingItems.push('ql_client_id');
-        if (!config.clientSecret) missingItems.push('ql_client_secret');
-        
-        $.log(`❌ 配置不完整，缺少: ${missingItems.join(', ')}`);
-        
         return {
             valid: false,
-            message: `⚠️ 配置不完整\n\n缺少以下配置项：\n${missingItems.map(item => `- ${item}`).join('\n')}\n\n请通过以下方式之一配置：\n\n方式1: 在 Shadowrocket 中编辑模块参数\n方式2: 使用 URL Scheme 设置持久化数据\n方式3: 在脚本编辑器中运行配置命令`
+            message: '⚠️ 配置不完整\n\n请设置以下持久化数据：\n- ql_url: 青龙面板地址\n- ql_client_id: Client ID\n- ql_client_secret: Client Secret'
         };
     }
 
     // 验证 URL 格式
     if (!config.qlUrl.startsWith('http://') && !config.qlUrl.startsWith('https://')) {
-        $.log(`❌ 青龙面板地址格式错误: ${config.qlUrl}`);
         return {
             valid: false,
-            message: '⚠️ 青龙面板地址格式错误\n\n需要以 http:// 或 https:// 开头\n\n示例: http://192.168.1.100:5700'
+            message: '⚠️ 青龙面板地址格式错误\n\n需要以 http:// 或 https:// 开头'
         };
     }
 
     // 移除 URL 末尾的斜杠
     if (config.qlUrl.endsWith('/')) {
         config.qlUrl = config.qlUrl.slice(0, -1);
-        $.log(`✓ 已移除 URL 末尾的斜杠`);
     }
 
-    $.log(`✅ 配置检查通过`);
     return { valid: true };
 }
 
@@ -226,12 +126,12 @@ function extractCookie(headers) {
     if (!ptKey || !ptPin || ptKey.length < 10) {
         return { valid: false, message: 'Invalid cookie format' };
     }
-
+    
     // 检查是否为游客cookie
     if (ptKey.startsWith('fake_') || ptPin.toLowerCase() === 'guest') {
         return { valid: false, message: 'Guest cookie detected, skipping sync' };
     }
-
+    
     const jdCookie = `pt_key=${ptKey};pt_pin=${ptPin};`;
 
     return {
