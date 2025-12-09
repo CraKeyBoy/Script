@@ -11,11 +11,12 @@ const $ = new Env('JD Cookie Sync');
  * 从持久化存储读取配置
  */
 function getConfig() {
+    const arge = JSON.parse($argument);
     const config = {
-        qlUrl: $.getval('ql_url'),
-        clientId: $.getval('ql_client_id'),
-        clientSecret: $.getval('ql_client_secret'),
-        updateInterval: parseInt($.getval('ql_update_interval') || '1800') // 默认30分钟
+        qlUrl: $.getval('ql_url') || arge.ql_url,
+        clientId: $.getval('ql_client_id') || arge.ql_client_id,
+        clientSecret: $.getval('ql_client_secret') || arge.ql_client_secret,
+        updateInterval: parseInt($.getval('ql_update_interval') || arge.ql_update_interval || '1800') // 默认30分钟
     };
 
     return config;
