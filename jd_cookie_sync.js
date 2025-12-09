@@ -12,10 +12,11 @@ const $ = new Env('JD Cookie Sync');
  */
 function getConfig() {
     const config = {};
-
+    $.msg('JD Cookie Sync', '参数获取', 'test');
     if (typeof $argument !== 'undefined' && $argument) {
         try {
             const parsed = JSON.parse($argument);
+            $.msg('JD Cookie Sync', '参数获取', parsed);
             $.log(`🔍 从 $argument 获取参数`);
             if (parsed && typeof parsed === 'object') {
                 parsedFromJson = true;
