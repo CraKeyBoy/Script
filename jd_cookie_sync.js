@@ -19,7 +19,11 @@ function getConfig() {
             // 解析参数字符串，格式: ql_url=xxx,ql_client_id=xxx,ql_client_secret=xxx,ql_update_interval=xxx
             const args = $argument.split(',');
             for (const arg of args) {
-                const [key, value] = arg.split('=');
+                // 使用 indexOf 找到第一个 = 位置，避免 URL 中的 = 被错误分割
+                const equalIndex = arg.indexOf('=');
+                if (equalIndex === -1) continue;
+                const key = arg.substring(0, equalIndex);
+                const value = arg.substring(equalIndex + 1);
                 if (key && value) {
                     const trimmedKey = key.trim();
                     const trimmedValue = value.trim();
