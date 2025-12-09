@@ -14,10 +14,9 @@ function getConfig() {
     const config = {};
 
     if (typeof $argument !== 'undefined' && $argument) {
-        const argumentStr = JSON.parse($argument);
-        $.log(`🔍 从 $argument 获取参数`);
         try {
-            const parsed = JSON.parse(argumentStr);
+            const parsed = JSON.parse($argument);
+            $.log(`🔍 从 $argument 获取参数`);
             if (parsed && typeof parsed === 'object') {
                 parsedFromJson = true;
                 if (parsed.ql_url) {
