@@ -1,5 +1,5 @@
 #!name=JD Cookie Sync to Qinglong
-#!arguments=ql_url:http://192.168.1.100:5700,ql_client_id:ql_client_id,your_client_secret:your_client_secret,ql_update_interval:1800
+#!arguments=ql_url:http://192.168.1.100:5700,ql_client_id:ql_client_id,ql_client_secret:your_client_secret,ql_update_interval:1800
 #!desc=Auto sync JD cookies to Qinglong panel when using JD app
 #!system=ios
 
