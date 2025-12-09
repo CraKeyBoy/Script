@@ -31,6 +31,7 @@ function getConfig() {
                 }
             }
             $.log(`✅ 从模块参数读取配置: ${JSON.stringify(config)}`);
+            message: `✅ 从模块参数读取配置\n\n${JSON.stringify(config)}`;
         } catch (error) {
             $.log(`⚠️ 解析模块参数失败: ${error.message}`);
         }
