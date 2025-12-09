@@ -36,34 +36,68 @@ function getConfig() {
 
     // 解析参数字符串
     if (argumentStr) {
-        try {
-            $.log(`🔍 原始模块参数: ${argumentStr}`);
-            // 解析参数字符串，支持逗号或&作为分隔符
-            // 格式: ql_url=xxx,ql_client_id=xxx 或 ql_url=xxx&ql_client_id=xxx
-            const separator = argumentStr.includes('&') ? '&' : ',';
-            const args = argumentStr.split(separator);
-            $.log(`🔍 分隔符: "${separator}", 参数数量: ${args.length}`);
-            
-            for (const arg of args) {
-                // 使用 indexOf 找到第一个 = 位置，避免 URL 中的 = 被错误分割
-                const equalIndex = arg.indexOf('=');
-                if (equalIndex === -1) continue;
-                
-                const key = arg.substring(0, equalIndex).trim();
-                let value = arg.substring(equalIndex + 1).trim();
-                
-                // 处理 URL 编码的值
-                try {
-                    value = decodeURIComponent(value);
-                } catch (e) {
-                    // 如果解码失败，使用原始值
+        const trimmedArgument = argumentStr.trim();
+        $.log(`🔍 原始模块参数: ${trimmedArgument}`);
+
+        let parsedFromJson = false;
+
+        // 优先尝试 JSON 格式（Shadowrocket 新格式）
+        if (trimmedArgument.startsWith('{') && trimmedArgument.endsWith('}')) {
+            try {
+                const parsed = JSON.parse(trimmedArgument);
+                if (parsed && typeof parsed === 'object') {
+                    parsedFromJson = true;
+                    $.log(`🔍 解析 JSON 参数成功，键数量: ${Object.keys(parsed).length}`);
+
+                    if (parsed.ql_url) {
+                        config.qlUrl = String(parsed.ql_url).trim();
+                        $.log(`🔍 ql_url -> ${config.qlUrl}`);
+                    }
+                    if (parsed.ql_client_id) {
+                        config.clientId = String(parsed.ql_client_id).trim();
+                        $.log(`🔍 ql_client_id -> ${config.clientId.substring(0, 10)}${config.clientId.length > 10 ? '...' : ''}`);
+                    }
+                    if (parsed.ql_client_secret) {
+                        config.clientSecret = String(parsed.ql_client_secret).trim();
+                        $.log(`🔍 ql_client_secret -> 已获取`);
+                    }
+                    if (parsed.ql_update_interval !== undefined && parsed.ql_update_interval !== null) {
+                        config.updateInterval = parseInt(parsed.ql_update_interval, 10) || 1800;
+                        $.log(`🔍 ql_update_interval -> ${config.updateInterval}`);
+                    }
                 }
-                
-                $.log(`🔍 解析参数: key="${key}", value="${value.substring(0, 50)}${value.length > 50 ? '...' : ''}"`);
-                
-                if (key && value) {
+            } catch (error) {
+                $.log(`⚠️ JSON 参数解析失败: ${error.message}`);
+            }
+        }
+
+        // 兼容旧版 key=value 格式
+        if (!parsedFromJson) {
+            try {
+                const separator = trimmedArgument.includes('&') ? '&' : ',';
+                const args = trimmedArgument.split(separator);
+                $.log(`🔍 使用分隔符 "${separator}" 解析参数，共 ${args.length} 项`);
+
+                for (const arg of args) {
+                    const equalIndex = arg.indexOf('=');
+                    if (equalIndex === -1) continue;
+
+                    const key = arg.substring(0, equalIndex).trim();
+                    let value = arg.substring(equalIndex + 1).trim();
+
+                    // 处理 URL 编码的值
+                    try {
+                        value = decodeURIComponent(value);
+                    } catch (e) {
+                        // ignore decoding error
+                    }
+
+                    $.log(`🔍 解析参数: key="${key}", value="${value.substring(0, 50)}${value.length > 50 ? '...' : ''}"`);
+
+                    if (!key) continue;
+
                     if (key === 'ql_update_interval') {
-                        config.updateInterval = parseInt(value) || 1800;
+                        config.updateInterval = parseInt(value, 10) || 1800;
                     } else if (key === 'ql_url') {
                         config.qlUrl = value;
                     } else if (key === 'ql_client_id') {
@@ -72,15 +106,15 @@ function getConfig() {
                         config.clientSecret = value;
                     }
                 }
+
+                if (config.qlUrl || config.clientId || config.clientSecret) {
+                    $.log(`✅ 从模块参数读取配置: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}`);
+                } else {
+                    $.log(`⚠️ 模块参数解析完成，但未获取到有效配置`);
+                }
+            } catch (error) {
+                $.log(`⚠️ 解析模块参数失败: ${error.message}`);
             }
-            
-            if (config.qlUrl || config.clientId || config.clientSecret) {
-                $.log(`✅ 从模块参数读取配置: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}`);
-            } else {
-                $.log(`⚠️ 模块参数解析完成，但未获取到有效配置`);
-            }
-        } catch (error) {
-            $.log(`⚠️ 解析模块参数失败: ${error.message}`);
         }
     } else {
         $.log(`⚠️ 未能获取模块参数，将从持久化存储读取配置`);
@@ -116,7 +150,7 @@ function getConfig() {
         }
     }
 
-    message = `📋 最终配置状态: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}s`;
+    message: `📋 最终配置状态: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}s`;
     $.log(`📋 最终配置状态: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}s`);
     return config;
 }
