@@ -8,67 +8,36 @@ const $ = new Env('JD Cookie Sync');
 // ============= 配置管理 =============
 
 /**
- * 从模块参数或持久化存储读取配置
+ * 从持久化存储读取配置
  */
 function getConfig() {
-    const config = {};
-    $.msg('JD Cookie Sync', '参数获取', 'test');
-    if (typeof $argument !== 'undefined' && $argument) {
-        try {
-            const parsed = JSON.parse($argument);
-            $.msg('JD Cookie Sync', '参数获取', parsed);
-            $.log(`🔍 从 $argument 获取参数`);
-            if (parsed && typeof parsed === 'object') {
-                parsedFromJson = true;
-                if (parsed.ql_url) {
-                    config.qlUrl = String(parsed.ql_url).trim();
-                    $.log(`🔍 ql_url -> ${config.qlUrl}`);
-                }
-                if (parsed.ql_client_id) {
-                    config.clientId = String(parsed.ql_client_id).trim();
-                    $.log(`🔍 ql_client_id -> ${config.clientId.substring(0, 10)}${config.clientId.length > 10 ? '...' : ''}`);
-                }
-                if (parsed.ql_client_secret) {
-                    config.clientSecret = String(parsed.ql_client_secret).trim();
-                    $.log(`🔍 ql_client_secret -> 已获取`);
-                }
-                if (parsed.ql_update_interval !== undefined && parsed.ql_update_interval !== null) {
-                    config.updateInterval = parseInt(parsed.ql_update_interval, 10) || 1800;
-                    $.log(`🔍 ql_update_interval -> ${config.updateInterval}`);
-                }
-            }
-        } catch (error) {
-            $.log(`⚠️ JSON 参数解析失败: ${error.message}`);
+
+    try {
+        const parsed = JSON.parse($argument);
+        if (parsed.ql_url) {
+            $.setval('ql_url', String(parsed.ql_url).trim());
         }
-    } 
-
-    // 持久化存储作为兜底，同时回写最新值
-    if (config.qlUrl) {
-        $.setval(config.qlUrl, 'ql_url');
-    } else {
-        config.qlUrl = $.getval('ql_url');
+        if (parsed.ql_client_id) {
+            $.setval('ql_client_id', String(parsed.ql_client_id).trim());
+        }
+        if (parsed.ql_client_secret) {
+            $.setval('ql_client_secret', String(parsed.ql_client_secret).trim());
+        }
+        if (parsed.ql_update_interval !== undefined 
+            && parsed.ql_update_interval !== null) {
+            $.setval('ql_update_interval', parsed.ql_update_interval);
+        }
+    } catch (error) {
+        $.log(`⚠️ JSON 参数解析失败: ${error.message}`);
     }
 
-    if (config.clientId) {
-        $.setval(config.clientId, 'ql_client_id');
-    } else {
-        config.clientId = $.getval('ql_client_id');
-    }
+    const config = {
+        qlUrl: $.getval('ql_url'),
+        clientId: $.getval('ql_client_id'),
+        clientSecret: $.getval('ql_client_secret'),
+        updateInterval: parseInt($.getval('ql_update_interval') || '1800') // 默认30分钟
+    };
 
-    if (config.clientSecret) {
-        $.setval(config.clientSecret, 'ql_client_secret');
-    } else {
-        config.clientSecret = $.getval('ql_client_secret');
-    }
-
-    if (config.updateInterval) {
-        config.updateInterval = parseInt(config.updateInterval, 10) || 1800;
-        $.setval(String(config.updateInterval), 'ql_update_interval');
-    } else {
-        config.updateInterval = parseInt($.getval('ql_update_interval') || '1800', 10);
-    }
-
-    $.log(`📋 最终配置状态: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}s`);
     return config;
 }
 
