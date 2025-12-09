@@ -116,6 +116,7 @@ function getConfig() {
         }
     }
 
+    message = `📋 最终配置状态: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}s`;
     $.log(`📋 最终配置状态: qlUrl=${config.qlUrl ? '✓' : '✗'}, clientId=${config.clientId ? '✓' : '✗'}, clientSecret=${config.clientSecret ? '✓' : '✗'}, updateInterval=${config.updateInterval}s`);
     return config;
 }
