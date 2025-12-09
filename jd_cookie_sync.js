@@ -25,13 +25,16 @@ function getConfig() {
                     const trimmedValue = value.trim();
                     if (trimmedKey === 'ql_update_interval') {
                         config.updateInterval = parseInt(trimmedValue) || 1800;
-                    } else if (['ql_url', 'ql_client_id', 'ql_client_secret'].includes(trimmedKey)) {
-                        config[trimmedKey] = trimmedValue;
+                    } else if (trimmedKey === 'ql_url') {
+                        config.qlUrl = trimmedValue;
+                    } else if (trimmedKey === 'ql_client_id') {
+                        config.clientId = trimmedValue;
+                    } else if (trimmedKey === 'ql_client_secret') {
+                        config.clientSecret = trimmedValue;
                     }
                 }
             }
             $.log(`✅ 从模块参数读取配置: ${JSON.stringify(config)}`);
-            message: `✅ 从模块参数读取配置\n\n${JSON.stringify(config)}`;
         } catch (error) {
             $.log(`⚠️ 解析模块参数失败: ${error.message}`);
         }
