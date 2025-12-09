@@ -307,6 +307,7 @@ async function addEnv(config, token, name, value, remarks) {
  */
 async function syncToQinglong(cookie, ptPin) {
     const config = getConfig();
+    $.msg('JD Cookie Sync', '配置信息', config);
 
     // 先检查时间间隔，避免不必要的配置检查和 API 调用
     const updateCheck = shouldUpdate(ptPin, config);
@@ -318,7 +319,7 @@ async function syncToQinglong(cookie, ptPin) {
     // 检查配置
     const configCheck = checkConfig(config);
     if (!configCheck.valid) {
-        $.msg('JD Cookie Sync', '配置错误', configCheck.message);
+        $.msg('JD Cookie Sync', '配置错误', $argument);
         return;
     }
 
