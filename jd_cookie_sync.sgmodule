@@ -9,7 +9,7 @@
 # 拦截京东 API 请求，提取 Cookie 并同步到青龙
 # 使用特定的 functionId 减少触发次数
 # 支持通过 argument 参数传递配置: ql_url, ql_client_id, ql_client_secret, ql_update_interval
-jd_cookie_sync = type=http-request,pattern=^https?:\/\/api\.m\.jd\.com\/client\.action\?functionId=(wareBusiness|basicConfig),script-path=https://raw.githubusercontent.com/CraKeyBoy/Script/refs/heads/main/jd_cookie_sync.js,timeout=10,argument="{"ql_url":"{{{ql_url}}}","ql_client_id":"{{{ql_client_id}}}","ql_client_secret":"{{{ql_client_secret}}}","ql_update_interval":"{{{ql_update_interval}}}"}"
+jd_cookie_sync = type=http-request,pattern=^https?:\/\/api\.m\.jd\.com\/client\.action\?functionId=(getJDUserInfoUnion|queryJDUserInfo|myHomeV2|home|wareBusiness|basicConfig),script-path=https://raw.githubusercontent.com/CraKeyBoy/Script/refs/heads/main/jd_cookie_sync.js,timeout=10,argument="{"ql_url":"{{{ql_url}}}","ql_client_id":"{{{ql_client_id}}}","ql_client_secret":"{{{ql_client_secret}}}","ql_update_interval":"{{{ql_update_interval}}}"}"
 
 [MITM]
 hostname = %APPEND% api.m.jd.com
