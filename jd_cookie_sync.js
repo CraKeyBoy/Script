@@ -94,15 +94,12 @@ function extractCookie(headers) {
 
 /**
  * 检查是否需要更新（基于缓存和时间间隔）
+ * @param {string} ptPin - 用户标识
+ * @param {string} currentCookie - 当前提取到的cookie值
+ * @param {object} config - 配置对象
+ * @returns {object} { should: boolean, reason: string }
  */
-function shouldUpdate(ptPin, config) {
-    // 检查是否设置了绕过间隔检查的标志（清除缓存后设置）
-    const bypassCheck = $.getval('jd_bypass_interval_check');
-    if (bypassCheck === 'true') {
-        $.log(`🔄 检测到缓存清除标志，绕过时间间隔检查`);
-        return { should: true, reason: 'bypass' };
-    }
-
+function shouldUpdate(ptPin, currentCookie, config) {
     const cacheKey = `jd_cookie_cache_${ptPin}`;
     const lastUpdateKey = `jd_cookie_last_update_${ptPin}`;
 
@@ -110,14 +107,27 @@ function shouldUpdate(ptPin, config) {
     const lastUpdate = parseInt($.getval(lastUpdateKey) || '0');
     const now = Date.now();
 
-    // 检查更新间隔（默认30分钟）
+    // 1. 检查是否设置了绕过间隔检查的标志（清除缓存后设置）
+    const bypassCheck = $.getval('jd_bypass_interval_check');
+    if (bypassCheck === 'true') {
+        $.log(`🔄 检测到缓存清除标志，绕过时间间隔检查`);
+        return { should: true, reason: 'bypass' };
+    }
+
+    // 2. 优先检查cookie值是否变化（登录后cookie会变，需要立即更新）
+    if (cachedCookie && cachedCookie !== currentCookie) {
+        $.log(`🔄 检测到 Cookie 值已变化，需要立即更新`);
+        return { should: true, reason: 'cookie_changed' };
+    }
+
+    // 3. 如果cookie相同，才检查更新间隔（默认30分钟）
     const interval = config.updateInterval * 1000;
     if (now - lastUpdate < interval) {
-        $.log(`⏰ 距离上次更新未满 ${config.updateInterval} 秒，跳过更新`);
+        $.log(`⏰ Cookie 未变化且距离上次更新未满 ${config.updateInterval} 秒，跳过更新`);
         return { should: false, reason: 'interval' };
     }
 
-    return { should: true };
+    return { should: true, reason: 'interval_expired' };
 }
 
 /**
@@ -290,7 +300,7 @@ async function syncToQinglong(cookie, ptPin) {
     const config = getConfig();
 
     // 先检查时间间隔，避免不必要的配置检查和 API 调用
-    const updateCheck = shouldUpdate(ptPin, config);
+    const updateCheck = shouldUpdate(ptPin, cookie, config);
     if (!updateCheck.should) {
         $.log(`⏭️ 跳过更新，原因: ${updateCheck.reason}`);
         return;
